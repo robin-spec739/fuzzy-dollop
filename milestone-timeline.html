@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POM Migration Timeline - Excel Export</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #1a202c;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        
+        .header p {
+            color: #718096;
+            font-size: 16px;
+        }
+        
+        .info-box {
+            background: #f7fafc;
+            border-left: 4px solid #4299e1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .info-box h3 {
+            color: #2d3748;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .info-box li {
+            color: #4a5568;
+            font-size: 14px;
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .info-box li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #48bb78;
+            font-weight: bold;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-card h4 {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .stat-card .number {
+            font-size: 36px;
+            font-weight: 700;
+        }
+        
+        .button-container {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        
+        .btn-secondary:hover {
+            background: #cbd5e0;
+            transform: translateY(-2px);
+        }
+        
+        .preview {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .preview h3 {
+            color: #2d3748;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .preview table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        
+        .preview th {
+            background: #4299e1;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        .preview td {
+            padding: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .preview tr:hover {
+            background: #edf2f7;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .status-completed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-in-progress {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+        
+        .status-pending {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        
+        .critical {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .icon {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .success-message {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .success-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 POM Migration Timeline</h1>
+            <p>Milestone-Driven Project Plan | Paragon → POM</p>
+        </div>
+        
+        <div class="info-box">
+            <h3>📋 What's included in the Excel file:</h3>
+            <ul>
+                <li>Complete milestone overview with all phases</li>
+                <li>Deliverables breakdown per milestone</li>
+                <li>Dependencies and critical path items</li>
+                <li>Status tracking columns (easy to update)</li>
+                <li>Owner/Stakeholder assignments</li>
+                <li>Pre-formatted and ready to use</li>
+            </ul>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <h4>Total Milestones</h4>
+                <div class="number">12</div>
+            </div>
+            <div class="stat-card">
+                <h4>Project Duration</h4>
+                <div class="number">~5 months</div>
+            </div>
+            <div class="stat-card">
+                <h4>Critical Gates</h4>
+                <div class="number">3</div>
+            </div>
+        </div>
+        
+        <div class="button-container">
+            <button class="btn btn-primary" onclick="downloadExcel()">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Download Excel File
+            </button>
+            <button class="btn btn-secondary" onclick="togglePreview()">
+                <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+                Preview Data
+            </button>
+        </div>
+        
+        <div id="successMessage" class="success-message">
+            ✓ Excel file downloaded successfully! Check your downloads folder.
+        </div>
+        
+        <div id="preview" class="preview" style="display: none;">
+            <h3>Data Preview</h3>
+            <table id="previewTable"></table>
+        </div>
+    </div>
+
+    <script>
+        const milestones = [
+            {
+                id: 1,
+                phase: "Analysis",
+                milestone: "Project Kickoff & Requirements Mapping",
+                date: "15-09-2025",
+                status: "Completed",
+                critical: "No",
+                owner: "Project Team",
+                deliverable1: "Requirements documentation",
+                deliverable2: "Process mapping (Paragon → POM)",
+                deliverable3: "Integration architecture overview",
+                deliverable4: "POC scope & success criteria defined",
+                dependency1: "",
+                dependency2: ""
+            },
+            {
+                id: 2,
+                phase: "Analysis",
+                milestone: "Ohpen Analysis Complete",
+                date: "15-10-2025",
+                status: "In Progress",
+                critical: "No",
+                owner: "Technical Team / Ohpen",
+                deliverable1: "Ohpen capability assessment (Close ↔ POM direct API)",
+                deliverable2: "Service Bus phase-out feasibility study",
+                deliverable3: "Technical architecture decision document",
+                deliverable4: "",
+                dependency1: "POM API documentation review",
+                dependency2: ""
+            },
+            {
+                id: 3,
+                phase: "Analysis",
+                milestone: "POM API Available",
+                date: "31-10-2025",
+                status: "Pending",
+                critical: "Yes",
+                owner: "POM",
+                deliverable1: "POM API documentation",
+                deliverable2: "API access & credentials",
+                deliverable3: "Technical specifications finalized",
+                deliverable4: "",
+                dependency1: "POM development team",
+                dependency2: ""
+            },
+            {
+                id: 4,
+                phase: "Design",
+                milestone: "Solution Design Complete",
+                date: "15-11-2025",
+                status: "Pending",
+                critical: "No",
+                owner: "Solution Architect",
+                deliverable1: "Integration design document",
+                deliverable2: "Communication flow diagrams",
+                deliverable3: "Test cases drafted",
+                deliverable4: "POC test plan finalized",
+                dependency1: "POM API Available",
+                dependency2: "Ohpen Analysis"
+            },
+            {
+                id: 5,
+                phase: "POC",
+                milestone: "POC Testing Complete",
+                date: "15-12-2025",
+                status: "Pending",
+                critical: "No",
+                owner: "Test Team",
+                deliverable1: "Sample letters/communications tested",
+                deliverable2: "Small-scale integration validated",
+                deliverable3: "POC results documentation",
+                deliverable4: "",
+                dependency1: "Solution Design Complete",
+                dependency2: ""
+            },
+            {
+                id: 6,
+                phase: "POC",
+                milestone: "Go/No-Go Decision",
+                date: "20-12-2025",
+                status: "Pending",
+                critical: "Yes",
+                owner: "Steering Committee",
+                deliverable1: "Go/No-Go recommendation report",
+                deliverable2: "Stakeholder approval documentation",
+                deliverable3: "Revised project plan (if Go)",
+                deliverable4: "",
+                dependency1: "POC Testing Complete",
+                dependency2: ""
+            },
+            {
+                id: 7,
+                phase: "Development",
+                milestone: "POM Setup Complete",
+                date: "05-01-2026",
+                status: "Pending",
+                critical: "No",
+                owner: "Implementation Team",
+                deliverable1: "POM environment configured",
+                deliverable2: "User accounts & permissions set",
+                deliverable3: "Templates migrated",
+                deliverable4: "",
+                dependency1: "Go/No-Go Decision: GO",
+                dependency2: ""
+            },
+            {
+                id: 8,
+                phase: "Development",
+                milestone: "Integration Development Complete",
+                date: "15-01-2026",
+                status: "Pending",
+                critical: "No",
+                owner: "Development Team",
+                deliverable1: "Close ↔ POM integration built",
+                deliverable2: "ZyLAB ↔ POM integration built",
+                deliverable3: "All communication flows configured",
+                deliverable4: "",
+                dependency1: "POM Setup Complete",
+                dependency2: ""
+            },
+            {
+                id: 9,
+                phase: "Testing",
+                milestone: "Comprehensive Testing Complete",
+                date: "25-01-2026",
+                status: "Pending",
+                critical: "No",
+                owner: "QA Team",
+                deliverable1: "All processes tested end-to-end",
+                deliverable2: "User acceptance testing (UAT) passed",
+                deliverable3: "Test results documentation",
+                deliverable4: "Bug fixes completed",
+                dependency1: "Integration Development Complete",
+                dependency2: ""
+            },
+            {
+                id: 10,
+                phase: "Go-Live Prep",
+                milestone: "Production Ready Sign-off",
+                date: "28-01-2026",
+                status: "Pending",
+                critical: "Yes",
+                owner: "Project Manager",
+                deliverable1: "User documentation complete",
+                deliverable2: "Training materials prepared",
+                deliverable3: "Rollback plan documented",
+                deliverable4: "Go-Live checklist verified",
+                dependency1: "Comprehensive Testing Complete",
+                dependency2: ""
+            },
+            {
+                id: 11,
+                phase: "Go-Live",
+                milestone: "Production Go-Live",
+                date: "31-01-2026",
+                status: "Pending",
+                critical: "Yes",
+                owner: "Operations Team",
+                deliverable1: "System live in production",
+                deliverable2: "Monitoring activated",
+                deliverable3: "Support team on standby",
+                deliverable4: "",
+                dependency1: "Production Ready Sign-off",
+                dependency2: ""
+            },
+            {
+                id: 12,
+                phase: "Hypercare",
+                milestone: "Hypercare Period Complete",
+                date: "28-02-2026",
+                status: "Pending",
+                critical: "No",
+                owner: "Support Team",
+                deliverable1: "Stability confirmed",
+                deliverable2: "Issues resolved",
+                deliverable3: "Lessons learned documented",
+                deliverable4: "Project closure report",
+                dependency1: "Production Go-Live",
+                dependency2: ""
+            }
+        ];
+
+        function downloadExcel() {
+            const wb = XLSX.utils.book_new();
+            
+            // Main Timeline Sheet
+            const wsData = [
+                ["PARAGON → POM MIGRATION - MILESTONE TIMELINE"],
+                ["Project Start: 15 September 2025 | Target Go-Live: 31 January 2026"],
+                [""],
+                ["ID", "Phase", "Milestone", "Target Date", "Status", "Critical", "Owner", "Deliverable 1", "Deliverable 2", "Deliverable 3", "Deliverable 4", "Dependency 1", "Dependency 2", "Notes"]
+            ];
+            
+            milestones.forEach(m => {
+                wsData.push([
+                    m.id,
+                    m.phase,
+                    m.milestone,
+                    m.date,
+                    m.status,
+                    m.critical,
+                    m.owner,
+                    m.deliverable1,
+                    m.deliverable2,
+                    m.deliverable3,
+                    m.deliverable4,
+                    m.dependency1,
+                    m.dependency2,
+                    ""
+                ]);
+            });
+            
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            
+            // Set column widths
+            ws['!cols'] = [
+                {wch: 5},   // ID
+                {wch: 15},  // Phase
+                {wch: 35},  // Milestone
+                {wch: 12},  // Date
+                {wch: 12},  // Status
+                {wch: 8},   // Critical
+                {wch: 20},  // Owner
+                {wch: 40},  // Deliverable 1
+                {wch: 40},  // Deliverable 2
+                {wch: 40},  // Deliverable 3
+                {wch: 40},  // Deliverable 4
+                {wch: 30},  // Dependency 1
+                {wch: 30},  // Dependency 2
+                {wch: 50}   // Notes
+            ];
+            
+            XLSX.utils.book_append_sheet(wb, ws, "Timeline");
+            
+            // Summary Sheet
+            const summaryData = [
+                ["PROJECT SUMMARY"],
+                [""],
+                ["Metric", "Value"],
+                ["Total Milestones", "12"],
+                ["Project Duration", "~5 months"],
+                ["Start Date", "15 September 2025"],
+                ["Target Go-Live", "31 January 2026"],
+                ["Critical Milestones", "4"],
+                [""],
+                ["PHASE BREAKDOWN"],
+                [""],
+                ["Phase", "Number of Milestones", "Duration"],
+                ["Analysis", "3", "Sep - Oct 2025"],
+                ["Design", "1", "Nov 2025"],
+                ["POC", "2", "Dec 2025"],
+                ["Development", "2", "Jan 2026"],
+                ["Testing", "1", "Jan 2026"],
+                ["Go-Live Preparation", "1", "Jan 2026"],
+                ["Go-Live", "1", "31 Jan 2026"],
+                ["Hypercare", "1", "Feb 2026"],
+                [""],
+                ["CRITICAL DEPENDENCIES"],
+                [""],
+                ["Dependency", "Expected Date", "Impact"],
+                ["POM API Available", "End October 2025", "HIGH - Blocks Design finalization"],
+                ["Ohpen Analysis Complete", "15 October 2025", "HIGH - Determines integration approach"],
+                ["Go/No-Go Decision", "20 December 2025", "CRITICAL - Project continuation"],
+                ["Production Sign-off", "28 January 2026", "CRITICAL - Go-Live approval"]
+            ];
+            
+            const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+            wsSummary['!cols'] = [{wch: 25}, {wch: 20}, {wch: 45}];
+            XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
+            
+            // Status Legend Sheet
+            const legendData = [
+                ["STATUS LEGEND & INSTRUCTIONS"],
+                [""],
+                ["HOW TO USE THIS TIMELINE"],
+                [""],
+                ["1. Update the 'Status' column as milestones progress"],
+                ["2. Add notes in the 'Notes' column for any important updates or changes"],
+                ["3. Update target dates if schedule changes occur"],
+                ["4. Mark milestones as 'Critical' if they become blocking items"],
+                ["5. Assign owners/stakeholders as team structure is finalized"],
+                [""],
+                ["STATUS VALUES"],
+                [""],
+                ["Status", "Meaning", "Action Required"],
+                ["Completed", "Milestone achieved", "Document lessons learned"],
+                ["In Progress", "Currently working on", "Monitor progress daily"],
+                ["Pending", "Not started yet", "Plan resources and timeline"],
+                ["At Risk", "Potential delay", "Escalate and create mitigation plan"],
+                ["Blocked", "Cannot proceed", "Remove blocker urgently"],
+                [""],
+                ["CRITICAL MILESTONE MARKERS"],
+                [""],
+                ["Marker", "Meaning"],
+                ["Yes", "Go/No-Go decision point or hard deadline"],
+                ["No", "Standard milestone"],
+                [""],
+                ["COLOR CODING SUGGESTION"],
+                [""],
+                ["Status", "Suggested Excel Color"],
+                ["Completed", "Green"],
+                ["In Progress", "Blue"],
+                ["Pending", "Gray"],
+                ["At Risk", "Orange"],
+                ["Blocked", "Red"],
+                ["Critical = Yes", "Red border or background"]
+            ];
+            
+            const wsLegend = XLSX.utils.aoa_to_sheet(legendData);
+            wsLegend['!cols'] = [{wch: 20}, {wch: 35}, {wch: 40}];
+            XLSX.utils.book_append_sheet(wb, wsLegend, "Instructions");
+            
+            // Download
+            XLSX.writeFile(wb, "POM_Migration_Timeline.xlsx");
+            
+            // Show success message
+            const successMsg = document.getElementById('successMessage');
+            successMsg.classList.add('show');
+            setTimeout(() => {
+                successMsg.classList.remove('show');
+            }, 4000);
+        }
+        
+        function togglePreview() {
+            const preview = document.getElementById('preview');
+            const table = document.getElementById('previewTable');
+            
+            if (preview.style.display === 'none') {
+                preview.style.display = 'block';
+                
+                // Create table
+                let html = '<thead><tr><th>ID</th><th>Phase</th><th>Milestone</th><th>Date</th><th>Status</th><th>Critical</th><th>Owner</th></tr></thead><tbody>';
+                
+                milestones.forEach(m => {
+                    let statusClass = 'status-' + m.status.toLowerCase().replace(' ', '-');
+                    html += `<tr>
+                        <td>${m.id}</td>
+                        <td>${m.phase}</td>
+                        <td>${m.milestone}</td>
+                        <td>${m.date}</td>
+                        <td><span class="status-badge ${statusClass}">${m.status}</span></td>
+                        <td>${m.critical === 'Yes' ? '<span class="status-badge critical">YES</span>' : 'No'}</td>
+                        <td>${m.owner}</td>
+                    </tr>`;
+                });
+                
+                html += '</tbody>';
+                table.innerHTML = html;
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
